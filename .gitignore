@@ -1,0 +1,5 @@
+*.txt
+*.csv
+*.env
+*.json
+match_history/
