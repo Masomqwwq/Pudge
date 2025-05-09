@@ -11,7 +11,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 # === Bot Setup ===
-CHANNEL_ID = 663995718624870400  # Replace with your channel ID
+CHANNEL_ID = 709967557406490664  # Replace with your channel ID
 intents = discord.Intents.default()
 bot = commands.Bot(intents=intents)
 load_dotenv()
@@ -42,9 +42,11 @@ MATCH_HISTORY_DIR = "Match History"
 LAST_MATCHES_FILE = "last_matches.json"
 
 # === Generate Insult ===
-def generate_insult(match_data: dict) -> str:
-    player = match_data['players'][0]
+def generate_insult(match_data: dict, steam32_id) -> str:
+    player = next((p for p in match_data['players'] if p.get("account_id") == int(steam32_id)), None)
 
+    if not player:
+        return "Couldn't find the player in the match data."
     kills = player.get("kills", 0)
     deaths = player.get("deaths", 0)
     assists = player.get("assists", 0)
@@ -81,10 +83,10 @@ def generate_insult(match_data: dict) -> str:
     Kills/Deaths/Assists: {kills}/{deaths}/{assists}
     GPM: {gpm}
     XPM: {xpm}
-    Last Hits: {last_hits} (LH@10: {lh_at_10})
+    Last Hits: {last_hits} (Last hits @ 10 minutes: {lh_at_10})
     Items: {item_list}
 
-    Let them know how bad at the game they are. Keep the insults creative and scathing, but not too long.
+    Generate an insult no longer than 2 sentences commenting on that person's performance, only specifically highlighting deaths if the k/d/a is very imbalanced, Make it creative and scathing, do not include any meta text or quotations as your response will be directly pasresed
     """
 
     try:
@@ -182,13 +184,13 @@ async def check_matches():
                 save_last_matches(last_matches)
 
                 # Generate insult with LLM
-                insult = generate_insult(match_details)
+                insult = generate_insult(match_details, steam_id)
 
                 # Notify in Discord
                 await channel.send(
                     f"<@{discord_id}>\n"
                     f"{insult}\n"
-                    f"[Link](https://www.opendota.com/matches/{match_id})"
+                    f"[Link](<https://www.opendota.com/matches/{match_id}>)"
                 )
 
                 await asyncio.sleep(1)  # avoid rate limits
